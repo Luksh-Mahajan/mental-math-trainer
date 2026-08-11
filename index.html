@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arithmetic Speed Drill</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f5f5f5;
+            color: #222;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            padding: 30px 20px 60px;
+        }
+
+        /* ---------------- SETTINGS ---------------- */
+
+        .settings {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 25px;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #777;
+            margin-bottom: 25px;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
+
+        .setting {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .setting label {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            background: white;
+        }
+
+        .operations {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .operation {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 12px;
+            background: #f1f1f1;
+            border-radius: 5px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .operation input {
+            cursor: pointer;
+        }
+
+        .start-button {
+            margin-top: 22px;
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 5px;
+            background: #222;
+            color: white;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .start-button:hover {
+            background: #333;
+        }
+
+        /* ---------------- GAME ---------------- */
+
+        .game {
+            display: none;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 25px;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 35px;
+        }
+
+        .timer-container {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .timer {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .score-container {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .problem-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 180px;
+        }
+
+        .problem {
+            font-size: 52px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .answer-input {
+            display: block;
+            width: 260px;
+            margin: 15px auto 0;
+            padding: 12px;
+            font-size: 30px;
+            text-align: center;
+            border: 2px solid #bbb;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        .answer-input:focus {
+            border-color: #333;
+        }
+
+        .feedback {
+            height: 25px;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 16px;
+            color: #777;
+        }
+
+        /* ---------------- RESULTS ---------------- */
+
+        .results {
+            display: none;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .results h2 {
+            margin-top: 0;
+            font-size: 28px;
+        }
+
+        .final-score {
+            font-size: 58px;
+            font-weight: bold;
+            margin: 20px 0 30px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat {
+            background: #f5f5f5;
+            padding: 18px 10px;
+            border-radius: 6px;
+        }
+
+        .stat-value {
+            font-size: 25px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #777;
+            font-size: 14px;
+        }
+
+        .again-button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            background: #222;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .again-button:hover {
+            background: #333;
+        }
+
+        /* ---------------- MOBILE ---------------- */
+
+        @media (max-width: 600px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .problem {
+                font-size: 40px;
+            }
+
+            .answer-input {
+                width: 220px;
+                font-size: 26px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .game-header {
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- ================= SETTINGS ================= -->
+
+    <div class="settings" id="settingsScreen">
+
+        <h1>Arithmetic Speed Drill</h1>
+
+        <div class="subtitle">
+            Practice arithmetic as quickly and accurately as possible.
+        </div>
+
+        <div class="settings-grid">
+
+            <div class="setting">
+                <label for="duration">Time limit</label>
+
+                <select id="duration">
+                    <option value="15">15 seconds</option>
+                    <option value="30">30 seconds</option>
+                    <option value="60" selected>60 seconds</option>
+                    <option value="120">2 minutes</option>
+                    <option value="300">5 minutes</option>
+                </select>
+            </div>
+
+            <div class="setting">
+                <label for="minNumber">Minimum number</label>
+
+                <input
+                    type="number"
+                    id="minNumber"
+                    value="1"
+                    min="0"
+                >
+            </div>
+
+            <div class="setting">
+                <label for="maxNumber">Maximum number</label>
+
+                <input
+                    type="number"
+                    id="maxNumber"
+                    value="100"
+                    min="1"
+                >
+            </div>
+
+            <div class="setting">
+                <label>Operations</label>
+
+                <div class="operations">
+
+                    <label class="operation">
+                        <input type="checkbox" id="addition" checked>
+                        +
+                    </label>
+
+                    <label class="operation">
+                        <input type="checkbox" id="subtraction" checked>
+                        −
+                    </label>
+
+                    <label class="operation">
+                        <input type="checkbox" id="multiplication" checked>
+                        ×
+                    </label>
+
+                    <label class="operation">
+                        <input type="checkbox" id="division">
+                        ÷
+                    </label>
+
+                </div>
+            </div>
+
+        </div>
+
+        <button class="start-button" id="startButton">
+            Start
+        </button>
+
+    </div>
+
+
+    <!-- ================= GAME ================= -->
+
+    <div class="game" id="gameScreen">
+
+        <div class="game-header">
+
+            <div class="timer-container">
+                <span id="timer">60</span>
+            </div>
+
+            <div class="score-container">
+                Score:
+                <strong id="score">0</strong>
+            </div>
+
+        </div>
+
+        <div class="problem-container">
+
+            <div class="problem" id="problem">
+                12 + 8
+            </div>
+
+        </div>
+
+        <input
+            id="answerInput"
+            class="answer-input"
+            type="number"
+            autocomplete="off"
+            inputmode="numeric"
+            autofocus
+        >
+
+        <div class="feedback" id="feedback"></div>
+
+    </div>
+
+
+    <!-- ================= RESULTS ================= -->
+
+    <div class="results" id="resultsScreen">
+
+        <h2>Finished</h2>
+
+        <div class="final-score" id="finalScore">
+            0
+        </div>
+
+        <div class="stats">
+
+            <div class="stat">
+                <div class="stat-value" id="totalQuestions">
+                    0
+                </div>
+
+                <div class="stat-label">
+                    Questions
+                </div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-value" id="correctAnswers">
+                    0
+                </div>
+
+                <div class="stat-label">
+                    Correct
+                </div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-value" id="accuracy">
+                    0%
+                </div>
+
+                <div class="stat-label">
+                    Accuracy
+                </div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-value" id="questionsPerMinute">
+                    0
+                </div>
+
+                <div class="stat-label">
+                    Questions / minute
+                </div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-value" id="correctPerMinute">
+                    0
+                </div>
+
+                <div class="stat-label">
+                    Correct / minute
+                </div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-value" id="incorrectAnswers">
+                    0
+                </div>
+
+                <div class="stat-label">
+                    Incorrect
+                </div>
+            </div>
+
+        </div>
+
+        <button class="again-button" id="againButton">
+            Play Again
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    // ============================================================
+    // GAME STATE
+    // ============================================================
+
+    let game = {
+        duration: 60,
+        remainingTime: 60,
+
+        minNumber: 1,
+        maxNumber: 100,
+
+        operations: [],
+
+        score: 0,
+        totalQuestions: 0,
+        correctAnswers: 0,
+
+        currentAnswer: null,
+
+        timerInterval: null,
+
+        startTime: null
+    };
+
+
+    // ============================================================
+    // DOM ELEMENTS
+    // ============================================================
+
+    const settingsScreen = document.getElementById("settingsScreen");
+    const gameScreen = document.getElementById("gameScreen");
+    const resultsScreen = document.getElementById("resultsScreen");
+
+    const durationInput = document.getElementById("duration");
+    const minNumberInput = document.getElementById("minNumber");
+    const maxNumberInput = document.getElementById("maxNumber");
+
+    const additionInput = document.getElementById("addition");
+    const subtractionInput = document.getElementById("subtraction");
+    const multiplicationInput = document.getElementById("multiplication");
+    const divisionInput = document.getElementById("division");
+
+    const startButton = document.getElementById("startButton");
+    const againButton = document.getElementById("againButton");
+
+    const timerElement = document.getElementById("timer");
+    const scoreElement = document.getElementById("score");
+
+    const problemElement = document.getElementById("problem");
+    const answerInput = document.getElementById("answerInput");
+    const feedbackElement = document.getElementById("feedback");
+
+
+    // ============================================================
+    // UTILITY FUNCTIONS
+    // ============================================================
+
+    function randomInteger(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+
+    function randomChoice(array) {
+        return array[Math.floor(Math.random() * array.length)];
+    }
+
+
+    // ============================================================
+    // CREATE PROBLEM
+    // ============================================================
+
+    function generateProblem() {
+
+        const operation = randomChoice(game.operations);
+
+        let a;
+        let b;
+        let answer;
+
+        // ---------------- ADDITION ----------------
+
+        if (operation === "+") {
+
+            a = randomInteger(
+                game.minNumber,
+                game.maxNumber
+            );
+
+            b = randomInteger(
+                game.minNumber,
+                game.maxNumber
+            );
+
+            answer = a + b;
+        }
+
+
+        // ---------------- SUBTRACTION ----------------
+
+        else if (operation === "-") {
+
+            a = randomInteger(
+                game.minNumber,
+                game.maxNumber
+            );
+
+            b = randomInteger(
+                game.minNumber,
+                game.maxNumber
+            );
+
+            // Keep answers non-negative.
+            if (b > a) {
+                [a, b] = [b, a];
+            }
+
+            answer = a - b;
+        }
+
+
+        // ---------------- MULTIPLICATION ----------------
+
+        else if (operation === "×") {
+
+            a = randomInteger(
+                game.minNumber,
+                game.maxNumber
+            );
+
+            b = randomInteger(
+                game.minNumber,
+                game.maxNumber
+            );
+
+            answer = a * b;
+        }
+
+
+        // ---------------- DIVISION ----------------
+
+        else if (operation === "÷") {
+
+            /*
+             * Generate division problems with integer answers.
+             *
+             * Instead of:
+             *
+             *      48 / 6
+             *
+             * generating arbitrary numbers, we first pick the
+             * answer and divisor.
+             */
+
+            b = randomInteger(
+                Math.max(1, game.minNumber),
+                Math.max(1, game.maxNumber)
+            );
+
+            answer = randomInteger(
+                Math.max(1, game.minNumber),
+                Math.max(1, game.maxNumber)
+            );
+
+            a = b * answer;
+        }
+
+
+        game.currentAnswer = answer;
+
+        problemElement.textContent =
+            `${a} ${operation} ${b}`;
+    }
+
+
+    // ============================================================
+    // START GAME
+    // ============================================================
+
+    function startGame() {
+
+        clearInterval(game.timerInterval);
+
+        const duration = Number(durationInput.value);
+
+        const minNumber = Number(minNumberInput.value);
+        const maxNumber = Number(maxNumberInput.value);
+
+        if (minNumber < 0) {
+            alert("Minimum number cannot be negative.");
+            return;
+        }
+
+        if (maxNumber < minNumber) {
+            alert("Maximum number must be greater than minimum number.");
+            return;
+        }
+
+
+        // Determine selected operations.
+
+        const operations = [];
+
+        if (additionInput.checked) {
+            operations.push("+");
+        }
+
+        if (subtractionInput.checked) {
+            operations.push("-");
+        }
+
+        if (multiplicationInput.checked) {
+            operations.push("×");
+        }
+
+        if (divisionInput.checked) {
+            operations.push("÷");
+        }
+
+
+        if (operations.length === 0) {
+            alert("Select at least one operation.");
+            return;
+        }
+
+
+        // Reset game state.
+
+        game.duration = duration;
+        game.remainingTime = duration;
+
+        game.minNumber = minNumber;
+        game.maxNumber = maxNumber;
+
+        game.operations = operations;
+
+        game.score = 0;
+        game.totalQuestions = 0;
+        game.correctAnswers = 0;
+
+        game.startTime = Date.now();
+
+
+        // Update UI.
+
+        scoreElement.textContent = "0";
+        timerElement.textContent = duration;
+        feedbackElement.textContent = "";
+
+        settingsScreen.style.display = "none";
+        resultsScreen.style.display = "none";
+        gameScreen.style.display = "block";
+
+
+        generateProblem();
+
+        answerInput.value = "";
+        answerInput.focus();
+
+
+        // Start timer.
+
+        game.timerInterval = setInterval(() => {
+
+            game.remainingTime--;
+
+            timerElement.textContent =
+                game.remainingTime;
+
+
+            if (game.remainingTime <= 0) {
+                endGame();
+            }
+
+        }, 1000);
+    }
+
+
+    // ============================================================
+    // ANSWER SUBMISSION
+    // ============================================================
+
+    function submitAnswer() {
+    if (game.remainingTime <= 0) {
+        return;
+    }
+
+    const rawAnswer = answerInput.value.trim();
+
+    if (rawAnswer === "") {
+        return;
+    }
+
+    const userAnswer = Number(rawAnswer);
+
+    game.totalQuestions++;
+
+    if (userAnswer === game.currentAnswer) {
+        game.correctAnswers++;
+        game.score++;
+    }
+
+    scoreElement.textContent = game.score;
+
+    answerInput.value = "";
+    generateProblem();
+}
+
+
+    // ============================================================
+    // END GAME
+    // ============================================================
+
+    function endGame() {
+
+        clearInterval(game.timerInterval);
+
+        game.remainingTime = 0;
+
+        gameScreen.style.display = "none";
+        resultsScreen.style.display = "block";
+
+
+        const total = game.totalQuestions;
+        const correct = game.correctAnswers;
+        const incorrect = total - correct;
+
+        const accuracy =
+            total === 0
+                ? 0
+                : (correct / total) * 100;
+
+        const elapsedMinutes =
+            game.duration / 60;
+
+        const qpm =
+            total / elapsedMinutes;
+
+        const cpm =
+            correct / elapsedMinutes;
+
+
+        document.getElementById("finalScore").textContent =
+            game.score;
+
+        document.getElementById("totalQuestions").textContent =
+            total;
+
+        document.getElementById("correctAnswers").textContent =
+            correct;
+
+        document.getElementById("incorrectAnswers").textContent =
+            incorrect;
+
+        document.getElementById("accuracy").textContent =
+            accuracy.toFixed(1) + "%";
+
+        document.getElementById("questionsPerMinute").textContent =
+            qpm.toFixed(1);
+
+        document.getElementById("correctPerMinute").textContent =
+            cpm.toFixed(1);
+    }
+
+
+    // ============================================================
+    // PLAY AGAIN
+    // ============================================================
+
+    function playAgain() {
+
+        resultsScreen.style.display = "none";
+        settingsScreen.style.display = "block";
+    }
+
+
+    // ============================================================
+    // KEYBOARD INPUT
+    // ============================================================
+
+    answerInput.addEventListener("input", function () {
+    if (answerInput.value.trim() === "") {
+        return;
+    }
+
+    const userAnswer = Number(answerInput.value);
+
+    if (userAnswer === game.currentAnswer) {
+        submitAnswer();
+    }
+});
+
+
+    // Prevent accidental browser behavior.
+
+    document.addEventListener("keydown", function(event) {
+
+        // If the game is active and user presses a number,
+        // automatically focus the answer box.
+
+        if (
+            gameScreen.style.display === "block" &&
+            document.activeElement !== answerInput &&
+            /^[0-9-]$/.test(event.key)
+        ) {
+            answerInput.focus();
+        }
+    });
+
+
+    // ============================================================
+    // BUTTON EVENTS
+    // ============================================================
+
+    startButton.addEventListener(
+        "click",
+        startGame
+    );
+
+    againButton.addEventListener(
+        "click",
+        playAgain
+    );
+
+
+    // ============================================================
+    // ENTER TO START
+    // ============================================================
+
+    document.addEventListener("keydown", function(event) {
+
+        if (
+            settingsScreen.style.display !== "none" &&
+            event.key === "Enter" &&
+            document.activeElement.tagName !== "INPUT" &&
+            document.activeElement.tagName !== "SELECT"
+        ) {
+            startGame();
+        }
+    });
+
+</script>
+
+</body>
+</html>
