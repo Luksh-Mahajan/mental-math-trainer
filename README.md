@@ -25,7 +25,7 @@ At the end of each session, the application compares the user's performance agai
 *  **Keyboard-first interaction** - designed to minimize interruptions while solving
 *  **Performance benchmark** - targets 20 correct answers per minute
 *  **Goal comparison** - shows whether the user beat or fell short of the target
-*  **Responsive interface** — usable on both desktop and mobile
+*  **Responsive interface** - usable on both desktop and mobile
 
 ---
 
