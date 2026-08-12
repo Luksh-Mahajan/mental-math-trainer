@@ -113,6 +113,54 @@
             display: block;
         }
 
+        .op-ranges {
+            margin-top: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .op-range {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px 14px;
+            background: #f7f7f7;
+            border-radius: 6px;
+        }
+
+        .op-range-inputs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .op-range-inputs input {
+            width: 80px;
+            padding: 7px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .op-range-inputs span {
+            color: #888;
+            font-size: 13px;
+        }
+
+        .best-score-line {
+            margin-top: 16px;
+            font-size: 14px;
+            color: #666;
+            min-height: 18px;
+        }
+
+        .best-score-line strong {
+            color: #222;
+        }
+
         .button-row {
             display: flex;
             gap: 12px;
@@ -267,6 +315,43 @@
             background: #333;
         }
 
+        .breakdown {
+            margin: 0 0 28px;
+            text-align: left;
+        }
+
+        .breakdown-row {
+            display: grid;
+            grid-template-columns: 40px 1fr 90px 110px;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-top: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .breakdown-row:first-child {
+            border-top: none;
+        }
+
+        .breakdown-header {
+            color: #999;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .breakdown-op {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .breakdown-count,
+        .breakdown-time {
+            color: #555;
+            text-align: right;
+        }
+
         /* ---------------- TRICKS ---------------- */
 
         .tricks {
@@ -395,28 +480,6 @@
             </div>
 
             <div class="setting">
-                <label for="minNumber">Minimum number</label>
-
-                <input
-                    type="number"
-                    id="minNumber"
-                    value="1"
-                    min="0"
-                >
-            </div>
-
-            <div class="setting">
-                <label for="maxNumber">Maximum number</label>
-
-                <input
-                    type="number"
-                    id="maxNumber"
-                    value="100"
-                    min="1"
-                >
-            </div>
-
-            <div class="setting">
                 <label for="goalRate">Goal <span class="hint">(correct answers per minute)</span></label>
 
                 <input
@@ -427,35 +490,61 @@
                 >
             </div>
 
-            <div class="setting">
-                <label>Operations</label>
+        </div>
 
-                <div class="operations">
+        <div class="op-ranges">
 
-                    <label class="operation">
-                        <input type="checkbox" id="addition" checked>
-                        +
-                    </label>
+            <div class="op-range" data-op="+">
+                <label class="operation">
+                    <input type="checkbox" id="addition" checked>
+                    Addition (+)
+                </label>
+                <div class="op-range-inputs">
+                    <input type="number" id="additionMin" value="2" min="0" placeholder="Min">
+                    <span>to</span>
+                    <input type="number" id="additionMax" value="100" min="1" placeholder="Max">
+                </div>
+            </div>
 
-                    <label class="operation">
-                        <input type="checkbox" id="subtraction" checked>
-                        −
-                    </label>
+            <div class="op-range" data-op="-">
+                <label class="operation">
+                    <input type="checkbox" id="subtraction" checked>
+                    Subtraction (−)
+                </label>
+                <div class="op-range-inputs">
+                    <input type="number" id="subtractionMin" value="2" min="0" placeholder="Min">
+                    <span>to</span>
+                    <input type="number" id="subtractionMax" value="100" min="1" placeholder="Max">
+                </div>
+            </div>
 
-                    <label class="operation">
-                        <input type="checkbox" id="multiplication" checked>
-                        ×
-                    </label>
+            <div class="op-range" data-op="×">
+                <label class="operation">
+                    <input type="checkbox" id="multiplication" checked>
+                    Multiplication (×)
+                </label>
+                <div class="op-range-inputs">
+                    <input type="number" id="multiplicationMin" value="2" min="0" placeholder="Min">
+                    <span>to</span>
+                    <input type="number" id="multiplicationMax" value="100" min="1" placeholder="Max">
+                </div>
+            </div>
 
-                    <label class="operation">
-                        <input type="checkbox" id="division">
-                        ÷
-                    </label>
-
+            <div class="op-range" data-op="÷">
+                <label class="operation">
+                    <input type="checkbox" id="division">
+                    Division (÷)
+                </label>
+                <div class="op-range-inputs">
+                    <input type="number" id="divisionMin" value="2" min="0" placeholder="Min">
+                    <span>to</span>
+                    <input type="number" id="divisionMax" value="100" min="1" placeholder="Max">
                 </div>
             </div>
 
         </div>
+
+        <div class="best-score-line" id="bestScoreLine"></div>
 
         <div class="button-row">
             <button class="start-button" id="startButton">
@@ -524,6 +613,10 @@
         </div>
 
         <div class="goal-result" id="goalResult"></div>
+
+        <div class="goal-result" id="highScoreResult"></div>
+
+        <div class="breakdown" id="breakdown"></div>
 
         <button class="again-button" id="againButton">
             Play Again
@@ -637,16 +730,23 @@ Answer: 2491</div>
         duration: 60,
         remainingTime: 60,
 
-        minNumber: 1,
-        maxNumber: 100,
+        ranges: {},
 
         goalRate: 20,
 
         operations: [],
 
+        configKey: null,
+
         score: 0,
 
         currentAnswer: null,
+        currentOperation: null,
+        problemShownAt: null,
+
+        // One entry per problem answered correctly this round:
+        // { operation, timeMs }
+        log: [],
 
         timerInterval: null,
 
@@ -667,15 +767,35 @@ Answer: 2491</div>
     const customDurationWrap = document.getElementById("customDurationWrap");
     const customDurationInput = document.getElementById("customDuration");
 
-    const minNumberInput = document.getElementById("minNumber");
-    const maxNumberInput = document.getElementById("maxNumber");
-
     const goalRateInput = document.getElementById("goalRate");
 
     const additionInput = document.getElementById("addition");
     const subtractionInput = document.getElementById("subtraction");
     const multiplicationInput = document.getElementById("multiplication");
     const divisionInput = document.getElementById("division");
+
+    const rangeInputs = {
+        "+": {
+            min: document.getElementById("additionMin"),
+            max: document.getElementById("additionMax")
+        },
+        "-": {
+            min: document.getElementById("subtractionMin"),
+            max: document.getElementById("subtractionMax")
+        },
+        "×": {
+            min: document.getElementById("multiplicationMin"),
+            max: document.getElementById("multiplicationMax")
+        },
+        "÷": {
+            min: document.getElementById("divisionMin"),
+            max: document.getElementById("divisionMax")
+        }
+    };
+
+    const breakdownElement = document.getElementById("breakdown");
+    const bestScoreLine = document.getElementById("bestScoreLine");
+    const highScoreResult = document.getElementById("highScoreResult");
 
     const startButton = document.getElementById("startButton");
     const againButton = document.getElementById("againButton");
@@ -705,6 +825,194 @@ Answer: 2491</div>
 
 
     // ============================================================
+    // PERSISTENCE — SETTINGS + HIGH SCORES
+    // ============================================================
+
+    function getOpChecks() {
+        return {
+            "+": additionInput,
+            "-": subtractionInput,
+            "×": multiplicationInput,
+            "÷": divisionInput
+        };
+    }
+
+    // Builds a key that uniquely identifies the current difficulty
+    // configuration (time limit + each active operation's range).
+    // High scores are tracked per key, since a 60s addition-only
+    // round isn't comparable to a 60s round with all four operations.
+
+    function getConfigKey() {
+
+        const durationVal = durationInput.value === "custom"
+            ? Number(customDurationInput.value) || 0
+            : Number(durationInput.value);
+
+        const checks = getOpChecks();
+        const parts = [];
+
+        for (const op in checks) {
+            if (checks[op].checked) {
+                const min = rangeInputs[op].min.value;
+                const max = rangeInputs[op].max.value;
+                parts.push(`${op}:${min}-${max}`);
+            }
+        }
+
+        return `${durationVal}s|${parts.sort().join(",")}`;
+    }
+
+
+    function collectSettings() {
+
+        const checks = getOpChecks();
+        const ops = {};
+
+        for (const op in checks) {
+            ops[op] = {
+                checked: checks[op].checked,
+                min: rangeInputs[op].min.value,
+                max: rangeInputs[op].max.value
+            };
+        }
+
+        return {
+            duration: durationInput.value,
+            customDuration: customDurationInput.value,
+            goalRate: goalRateInput.value,
+            ops: ops
+        };
+    }
+
+
+    function applySettings(settings) {
+
+        if (!settings) {
+            return;
+        }
+
+        if (settings.duration !== undefined) {
+            durationInput.value = settings.duration;
+        }
+
+        if (settings.customDuration !== undefined) {
+            customDurationInput.value = settings.customDuration;
+        }
+
+        if (settings.goalRate !== undefined) {
+            goalRateInput.value = settings.goalRate;
+        }
+
+        const checks = getOpChecks();
+
+        if (settings.ops) {
+            for (const op in checks) {
+                const saved = settings.ops[op];
+
+                if (!saved) {
+                    continue;
+                }
+
+                checks[op].checked = saved.checked;
+                rangeInputs[op].min.value = saved.min;
+                rangeInputs[op].max.value = saved.max;
+            }
+        }
+
+        updateCustomDurationVisibility();
+    }
+
+
+    const STORAGE_PREFIX = "arithmeticDrill:";
+
+    async function saveSettings() {
+        try {
+            localStorage.setItem(
+                STORAGE_PREFIX + "settings",
+                JSON.stringify(collectSettings())
+            );
+        } catch (e) {
+            // Best-effort — ignore storage failures (e.g. sandboxed preview).
+        }
+    }
+
+
+    async function loadSettings() {
+        try {
+            const raw = localStorage.getItem(STORAGE_PREFIX + "settings");
+            if (raw) {
+                applySettings(JSON.parse(raw));
+            }
+        } catch (e) {
+            // No saved settings yet, or storage unavailable.
+        }
+    }
+
+
+    async function loadHighScores() {
+        try {
+            const raw = localStorage.getItem(STORAGE_PREFIX + "highscores");
+            return raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+
+    async function saveHighScores(scores) {
+        try {
+            localStorage.setItem(
+                STORAGE_PREFIX + "highscores",
+                JSON.stringify(scores)
+            );
+        } catch (e) {
+            // Best-effort — ignore storage failures (e.g. sandboxed preview).
+        }
+    }
+
+
+    async function updateBestScoreDisplay() {
+
+        const key = getConfigKey();
+        const scores = await loadHighScores();
+        const entry = scores[key];
+
+        if (entry) {
+            bestScoreLine.innerHTML =
+                `Best for these settings: <strong>${entry.score}</strong>`;
+        } else {
+            bestScoreLine.textContent =
+                "No score yet for these settings — go set one.";
+        }
+    }
+
+
+    function attachSettingsListeners() {
+
+        const inputs = [
+            durationInput,
+            customDurationInput,
+            goalRateInput,
+            additionInput,
+            subtractionInput,
+            multiplicationInput,
+            divisionInput
+        ];
+
+        for (const op in rangeInputs) {
+            inputs.push(rangeInputs[op].min, rangeInputs[op].max);
+        }
+
+        inputs.forEach(function (input) {
+            input.addEventListener("change", function () {
+                saveSettings();
+                updateBestScoreDisplay();
+            });
+        });
+    }
+
+
+    // ============================================================
     // CUSTOM DURATION TOGGLE
     // ============================================================
 
@@ -726,6 +1034,7 @@ Answer: 2491</div>
     function generateProblem() {
 
         const operation = randomChoice(game.operations);
+        const range = game.ranges[operation];
 
         let a;
         let b;
@@ -735,15 +1044,8 @@ Answer: 2491</div>
 
         if (operation === "+") {
 
-            a = randomInteger(
-                game.minNumber,
-                game.maxNumber
-            );
-
-            b = randomInteger(
-                game.minNumber,
-                game.maxNumber
-            );
+            a = randomInteger(range.min, range.max);
+            b = randomInteger(range.min, range.max);
 
             answer = a + b;
         }
@@ -753,15 +1055,8 @@ Answer: 2491</div>
 
         else if (operation === "-") {
 
-            a = randomInteger(
-                game.minNumber,
-                game.maxNumber
-            );
-
-            b = randomInteger(
-                game.minNumber,
-                game.maxNumber
-            );
+            a = randomInteger(range.min, range.max);
+            b = randomInteger(range.min, range.max);
 
             // Keep answers non-negative.
             if (b > a) {
@@ -776,15 +1071,8 @@ Answer: 2491</div>
 
         else if (operation === "×") {
 
-            a = randomInteger(
-                game.minNumber,
-                game.maxNumber
-            );
-
-            b = randomInteger(
-                game.minNumber,
-                game.maxNumber
-            );
+            a = randomInteger(range.min, range.max);
+            b = randomInteger(range.min, range.max);
 
             answer = a * b;
         }
@@ -802,24 +1090,19 @@ Answer: 2491</div>
              *      48 / 6
              *
              * generating arbitrary numbers, we first pick the
-             * answer and divisor.
+             * answer and divisor from the configured range.
              */
 
-            b = randomInteger(
-                Math.max(1, game.minNumber),
-                Math.min(12, game.maxNumber)
-            );
-
-            answer = randomInteger(
-                Math.max(1, game.minNumber),
-                Math.max(1, game.maxNumber)
-            );
+            b = randomInteger(Math.max(1, range.min), Math.max(1, range.max));
+            answer = randomInteger(Math.max(1, range.min), Math.max(1, range.max));
 
             a = b * answer;
         }
 
 
         game.currentAnswer = answer;
+        game.currentOperation = operation;
+        game.problemShownAt = Date.now();
 
         problemElement.textContent =
             `${a} ${operation} ${b}`;
@@ -847,20 +1130,7 @@ Answer: 2491</div>
             duration = Number(durationInput.value);
         }
 
-        const minNumber = Number(minNumberInput.value);
-        const maxNumber = Number(maxNumberInput.value);
-
         const goalRate = Number(goalRateInput.value);
-
-        if (minNumber < 0) {
-            alert("Minimum number cannot be negative.");
-            return;
-        }
-
-        if (maxNumber < minNumber) {
-            alert("Maximum number must be greater than minimum number.");
-            return;
-        }
 
         if (!goalRate || goalRate <= 0) {
             alert("Goal must be a positive number.");
@@ -868,24 +1138,34 @@ Answer: 2491</div>
         }
 
 
-        // Determine selected operations.
+        // Determine selected operations and their ranges.
 
         const operations = [];
+        const ranges = {};
 
-        if (additionInput.checked) {
-            operations.push("+");
-        }
+        const checks = getOpChecks();
 
-        if (subtractionInput.checked) {
-            operations.push("-");
-        }
+        for (const op in checks) {
 
-        if (multiplicationInput.checked) {
-            operations.push("×");
-        }
+            if (!checks[op].checked) {
+                continue;
+            }
 
-        if (divisionInput.checked) {
-            operations.push("÷");
+            const min = Number(rangeInputs[op].min.value);
+            const max = Number(rangeInputs[op].max.value);
+
+            if (min < 0) {
+                alert("Minimum numbers cannot be negative.");
+                return;
+            }
+
+            if (max < min) {
+                alert("Each operation's maximum must be at least its minimum.");
+                return;
+            }
+
+            operations.push(op);
+            ranges[op] = { min, max };
         }
 
 
@@ -900,16 +1180,20 @@ Answer: 2491</div>
         game.duration = duration;
         game.remainingTime = duration;
 
-        game.minNumber = minNumber;
-        game.maxNumber = maxNumber;
+        game.ranges = ranges;
 
         game.goalRate = goalRate;
 
         game.operations = operations;
 
         game.score = 0;
+        game.log = [];
+
+        game.configKey = getConfigKey();
 
         game.startTime = Date.now();
+
+        saveSettings();
 
 
         // Update UI.
@@ -917,6 +1201,7 @@ Answer: 2491</div>
         scoreElement.textContent = "0";
         timerElement.textContent = duration;
         feedbackElement.textContent = "";
+        highScoreResult.textContent = "";
 
         settingsScreen.style.display = "none";
         resultsScreen.style.display = "none";
@@ -973,6 +1258,11 @@ Answer: 2491</div>
 
         scoreElement.textContent = game.score;
 
+        game.log.push({
+            operation: game.currentOperation,
+            timeMs: Date.now() - game.problemShownAt
+        });
+
         answerInput.value = "";
         generateProblem();
     }
@@ -982,7 +1272,7 @@ Answer: 2491</div>
     // END GAME
     // ============================================================
 
-    function endGame() {
+    async function endGame() {
         clearInterval(game.timerInterval);
 
         game.remainingTime = 0;
@@ -1005,6 +1295,82 @@ Answer: 2491</div>
             goalResult.textContent =
                 `Goal: ${goal} — You were ${Math.abs(difference)} short.`;
         }
+
+        renderBreakdown();
+        await checkHighScore();
+    }
+
+
+    async function checkHighScore() {
+
+        const key = game.configKey;
+        const scores = await loadHighScores();
+        const previous = scores[key];
+
+        if (!previous || game.score > previous.score) {
+
+            scores[key] = {
+                score: game.score,
+                date: new Date().toISOString()
+            };
+
+            await saveHighScores(scores);
+
+            highScoreResult.textContent = previous
+                ? `New high score! Previous best: ${previous.score}.`
+                : "New high score!";
+        } else {
+            highScoreResult.textContent =
+                `Best for these settings: ${previous.score}.`;
+        }
+    }
+
+
+    function renderBreakdown() {
+
+        breakdownElement.innerHTML = "";
+
+        if (game.log.length === 0) {
+            return;
+        }
+
+        // Group log entries by operation.
+
+        const groups = {};
+
+        game.log.forEach(function (entry) {
+            if (!groups[entry.operation]) {
+                groups[entry.operation] = [];
+            }
+            groups[entry.operation].push(entry.timeMs);
+        });
+
+        const header = document.createElement("div");
+        header.className = "breakdown-row breakdown-header";
+        header.innerHTML =
+            "<span></span><span>Operation</span><span class=\"breakdown-count\">Solved</span><span class=\"breakdown-time\">Avg time</span>";
+        breakdownElement.appendChild(header);
+
+        game.operations.forEach(function (op) {
+
+            const times = groups[op];
+
+            if (!times) {
+                return;
+            }
+
+            const avgMs = times.reduce((sum, t) => sum + t, 0) / times.length;
+
+            const row = document.createElement("div");
+            row.className = "breakdown-row";
+            row.innerHTML =
+                `<span class="breakdown-op">${op}</span>` +
+                `<span></span>` +
+                `<span class="breakdown-count">${times.length}</span>` +
+                `<span class="breakdown-time">${(avgMs / 1000).toFixed(1)}s</span>`;
+
+            breakdownElement.appendChild(row);
+        });
     }
 
 
@@ -1149,9 +1515,20 @@ Answer: 2491</div>
     // INITIAL LOAD
     // ============================================================
 
-    if (window.location.pathname === "/tricks") {
-        showTricks();
+    async function init() {
+
+        updateCustomDurationVisibility();
+        attachSettingsListeners();
+
+        await loadSettings();
+        await updateBestScoreDisplay();
+
+        if (window.location.pathname === "/tricks") {
+            showTricks();
+        }
     }
+
+    init();
 
 </script>
 
