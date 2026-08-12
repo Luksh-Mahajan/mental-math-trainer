@@ -207,9 +207,8 @@
         }
 
         .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
+            display: flex;
+            justify-content: center;
             margin-bottom: 30px;
         }
 
@@ -228,6 +227,12 @@
         .stat-label {
             color: #777;
             font-size: 14px;
+        }
+
+        .goal-result {
+            margin: -10px 0 25px;
+            font-size: 18px;
+            font-weight: 600;
         }
 
         .again-button {
@@ -260,9 +265,7 @@
                 font-size: 26px;
             }
 
-            .stats {
-                grid-template-columns: 1fr;
-            }
+
 
             .game-header {
                 margin-bottom: 20px;
@@ -408,68 +411,18 @@
         </div>
 
         <div class="stats">
-
             <div class="stat">
                 <div class="stat-value" id="totalQuestions">
                     0
                 </div>
 
                 <div class="stat-label">
-                    Questions
+                    Questions Finished
                 </div>
             </div>
-
-            <div class="stat">
-                <div class="stat-value" id="correctAnswers">
-                    0
-                </div>
-
-                <div class="stat-label">
-                    Correct
-                </div>
-            </div>
-
-            <div class="stat">
-                <div class="stat-value" id="accuracy">
-                    0%
-                </div>
-
-                <div class="stat-label">
-                    Accuracy
-                </div>
-            </div>
-
-            <div class="stat">
-                <div class="stat-value" id="questionsPerMinute">
-                    0
-                </div>
-
-                <div class="stat-label">
-                    Questions / minute
-                </div>
-            </div>
-
-            <div class="stat">
-                <div class="stat-value" id="correctPerMinute">
-                    0
-                </div>
-
-                <div class="stat-label">
-                    Correct / minute
-                </div>
-            </div>
-
-            <div class="stat">
-                <div class="stat-value" id="incorrectAnswers">
-                    0
-                </div>
-
-                <div class="stat-label">
-                    Incorrect
-                </div>
-            </div>
-
         </div>
+
+        <div class="goal-result" id="goalResult"></div>
 
         <button class="again-button" id="againButton">
             Play Again
@@ -496,8 +449,6 @@
         operations: [],
 
         score: 0,
-        totalQuestions: 0,
-        correctAnswers: 0,
 
         currentAnswer: null,
 
@@ -637,7 +588,7 @@
 
             b = randomInteger(
                 Math.max(1, game.minNumber),
-                Math.max(1, game.maxNumber)
+                Math.min(12, game.maxNumber)
             );
 
             answer = randomInteger(
@@ -718,8 +669,6 @@
         game.operations = operations;
 
         game.score = 0;
-        game.totalQuestions = 0;
-        game.correctAnswers = 0;
 
         game.startTime = Date.now();
 
@@ -764,30 +713,29 @@
     // ============================================================
 
     function submitAnswer() {
-    if (game.remainingTime <= 0) {
-        return;
-    }
+        if (game.remainingTime <= 0) {
+            return;
+        }
 
-    const rawAnswer = answerInput.value.trim();
+        const rawAnswer = answerInput.value.trim();
 
-    if (rawAnswer === "") {
-        return;
-    }
+        if (rawAnswer === "") {
+            return;
+        }
 
-    const userAnswer = Number(rawAnswer);
+        const userAnswer = Number(rawAnswer);
 
-    game.totalQuestions++;
+        if (userAnswer !== game.currentAnswer) {
+            return;
+        }
 
-    if (userAnswer === game.currentAnswer) {
-        game.correctAnswers++;
         game.score++;
+
+        scoreElement.textContent = game.score;
+
+        answerInput.value = "";
+        generateProblem();
     }
-
-    scoreElement.textContent = game.score;
-
-    answerInput.value = "";
-    generateProblem();
-}
 
 
     // ============================================================
@@ -795,7 +743,6 @@
     // ============================================================
 
     function endGame() {
-
         clearInterval(game.timerInterval);
 
         game.remainingTime = 0;
@@ -803,46 +750,24 @@
         gameScreen.style.display = "none";
         resultsScreen.style.display = "block";
 
-
-        const total = game.totalQuestions;
-        const correct = game.correctAnswers;
-        const incorrect = total - correct;
-
-        const accuracy =
-            total === 0
-                ? 0
-                : (correct / total) * 100;
-
-        const elapsedMinutes =
-            game.duration / 60;
-
-        const qpm =
-            total / elapsedMinutes;
-
-        const cpm =
-            correct / elapsedMinutes;
-
+        const goal = game.duration / 60 * 20;
+        const difference = game.score - goal;
 
         document.getElementById("finalScore").textContent =
             game.score;
 
         document.getElementById("totalQuestions").textContent =
-            total;
+            game.score;
 
-        document.getElementById("correctAnswers").textContent =
-            correct;
+        const goalResult = document.getElementById("goalResult");
 
-        document.getElementById("incorrectAnswers").textContent =
-            incorrect;
-
-        document.getElementById("accuracy").textContent =
-            accuracy.toFixed(1) + "%";
-
-        document.getElementById("questionsPerMinute").textContent =
-            qpm.toFixed(1);
-
-        document.getElementById("correctPerMinute").textContent =
-            cpm.toFixed(1);
+        if (difference >= 0) {
+            goalResult.textContent =
+                `Goal: ${goal} — You beat it by ${difference}.`;
+        } else {
+            goalResult.textContent =
+                `Goal: ${goal} — You were ${Math.abs(difference)} short.`;
+        }
     }
 
 
