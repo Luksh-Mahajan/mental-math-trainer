@@ -1,6 +1,6 @@
 # Arithmetic Speed Drill
 
-A browser-based mental math trainer designed to improve **arithmetic speed and consistency** through timed practice.
+A browser-based mental math trainer designed to improve arithmetic speed through timed practice.
 
 ## Overview
 
