@@ -67,6 +67,12 @@
             font-size: 14px;
         }
 
+        .setting .hint {
+            color: #999;
+            font-size: 12px;
+            font-weight: 400;
+        }
+
         input[type="number"],
         select {
             width: 100%;
@@ -98,21 +104,50 @@
             cursor: pointer;
         }
 
-        .start-button {
+        .custom-duration {
+            margin-top: 8px;
+            display: none;
+        }
+
+        .custom-duration.visible {
+            display: block;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 12px;
             margin-top: 22px;
-            width: 100%;
+        }
+
+        .start-button,
+        .tricks-button {
             padding: 13px;
             border: none;
             border-radius: 5px;
-            background: #222;
-            color: white;
             font-size: 17px;
             font-weight: 600;
             cursor: pointer;
         }
 
+        .start-button {
+            flex: 2;
+            background: #222;
+            color: white;
+        }
+
         .start-button:hover {
             background: #333;
+        }
+
+        .tricks-button {
+            flex: 1;
+            background: #eee;
+            color: #222;
+            border: 1px solid #ccc;
+        }
+
+        .tricks-button:hover {
+            background: #e2e2e2;
         }
 
         /* ---------------- GAME ---------------- */
@@ -203,34 +238,17 @@
         .final-score {
             font-size: 58px;
             font-weight: bold;
-            margin: 20px 0 30px;
+            margin: 20px 0 5px;
         }
 
-        .stats {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 30px;
-        }
-
-        .stat {
-            background: #f5f5f5;
-            padding: 18px 10px;
-            border-radius: 6px;
-        }
-
-        .stat-value {
-            font-size: 25px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
+        .final-score-label {
             color: #777;
-            font-size: 14px;
+            font-size: 15px;
+            margin-bottom: 25px;
         }
 
         .goal-result {
-            margin: -10px 0 25px;
+            margin: 0 0 25px;
             font-size: 18px;
             font-weight: 600;
         }
@@ -249,6 +267,67 @@
             background: #333;
         }
 
+        /* ---------------- TRICKS ---------------- */
+
+        .tricks {
+            display: none;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .tricks-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .back-button {
+            padding: 9px 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background: #f1f1f1;
+            color: #222;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .back-button:hover {
+            background: #e2e2e2;
+        }
+
+        .trick {
+            padding: 18px 0;
+            border-top: 1px solid #eee;
+        }
+
+        .trick:first-of-type {
+            border-top: none;
+        }
+
+        .trick h3 {
+            margin: 0 0 8px;
+            font-size: 19px;
+        }
+
+        .trick p {
+            margin: 0 0 8px;
+            line-height: 1.5;
+            color: #333;
+        }
+
+        .trick .example {
+            background: #f7f7f7;
+            border-radius: 5px;
+            padding: 10px 14px;
+            font-size: 15px;
+            color: #333;
+            font-family: "Courier New", monospace;
+            white-space: pre-line;
+        }
+
         /* ---------------- MOBILE ---------------- */
 
         @media (max-width: 600px) {
@@ -265,10 +344,12 @@
                 font-size: 26px;
             }
 
-
-
             .game-header {
                 margin-bottom: 20px;
+            }
+
+            .button-row {
+                flex-direction: column;
             }
         }
     </style>
@@ -299,7 +380,18 @@
                     <option value="60" selected>60 seconds</option>
                     <option value="120">2 minutes</option>
                     <option value="300">5 minutes</option>
+                    <option value="custom">Custom</option>
                 </select>
+
+                <div class="custom-duration" id="customDurationWrap">
+                    <input
+                        type="number"
+                        id="customDuration"
+                        placeholder="Seconds"
+                        min="1"
+                        value="60"
+                    >
+                </div>
             </div>
 
             <div class="setting">
@@ -320,6 +412,17 @@
                     type="number"
                     id="maxNumber"
                     value="100"
+                    min="1"
+                >
+            </div>
+
+            <div class="setting">
+                <label for="goalRate">Goal <span class="hint">(correct answers per minute)</span></label>
+
+                <input
+                    type="number"
+                    id="goalRate"
+                    value="20"
                     min="1"
                 >
             </div>
@@ -354,9 +457,15 @@
 
         </div>
 
-        <button class="start-button" id="startButton">
-            Start
-        </button>
+        <div class="button-row">
+            <button class="start-button" id="startButton">
+                Start
+            </button>
+
+            <button class="tricks-button" id="tricksButton">
+                Mental Math Tricks
+            </button>
+        </div>
 
     </div>
 
@@ -410,16 +519,8 @@
             0
         </div>
 
-        <div class="stats">
-            <div class="stat">
-                <div class="stat-value" id="totalQuestions">
-                    0
-                </div>
-
-                <div class="stat-label">
-                    Questions Finished
-                </div>
-            </div>
+        <div class="final-score-label">
+            Correct Answers
         </div>
 
         <div class="goal-result" id="goalResult"></div>
@@ -427,6 +528,99 @@
         <button class="again-button" id="againButton">
             Play Again
         </button>
+
+    </div>
+
+
+    <!-- ================= TRICKS ================= -->
+
+    <div class="tricks" id="tricksScreen">
+
+        <div class="tricks-header">
+            <h1 style="margin: 0;">Mental Math Tricks</h1>
+            <button class="back-button" id="backButton">← Back</button>
+        </div>
+
+        <div class="subtitle">
+            A handful of shortcuts that make certain multiplications and squares much faster to do in your head.
+        </div>
+
+        <div class="trick">
+            <h3>Multiplying two numbers in the 90s</h3>
+            <p>
+                Both numbers are close to 100, so work with how far below 100 each one is.
+                Subtract one number's "distance from 100" from the other number to get the
+                first part of the answer, then multiply the two distances together to get
+                the last two digits.
+            </p>
+            <div class="example">96 × 97
+100 − 96 = 4
+100 − 97 = 3
+96 − 3 = 93  →  first part
+4 × 3 = 12   →  last two digits
+Answer: 9312</div>
+        </div>
+
+        <div class="trick">
+            <h3>Squaring numbers ending in 5</h3>
+            <p>
+                Take the leading digit(s), multiply by the next number up, then stick
+                "25" on the end.
+            </p>
+            <div class="example">65²
+Leading digit: 6
+6 × 7 = 42
+Append 25
+Answer: 4225</div>
+        </div>
+
+        <div class="trick">
+            <h3>Using difference of squares</h3>
+            <p>
+                To multiply two numbers, find their average and their distance from that
+                average, then compute average² minus distance². This works well when the
+                two numbers straddle a round number.
+            </p>
+            <div class="example">47 × 53
+Average: 50, distance: 3
+50² − 3² = 2500 − 9
+Answer: 2491</div>
+        </div>
+
+        <div class="trick">
+            <h3>Multiplying by 11</h3>
+            <p>
+                For a two-digit number, add its two digits together and slot the result
+                between them. If the sum is 10 or more, carry the 1 into the leading digit.
+            </p>
+            <div class="example">34 × 11
+3 + 4 = 7  →  374
+
+58 × 11
+5 + 8 = 13  →  write 3, carry 1
+5 + 1 = 6  →  638</div>
+        </div>
+
+        <div class="trick">
+            <h3>Multiplying by 12</h3>
+            <p>
+                Multiply by 10, then add double the original number.
+            </p>
+            <div class="example">34 × 12
+34 × 10 = 340
+34 × 2 = 68
+340 + 68 = 408</div>
+        </div>
+
+        <div class="trick">
+            <h3>Multiplying by 9</h3>
+            <p>
+                Multiply by 10, then subtract the original number.
+            </p>
+            <div class="example">34 × 9
+34 × 10 = 340
+340 − 34 = 306</div>
+        </div>
 
     </div>
 
@@ -445,6 +639,8 @@
 
         minNumber: 1,
         maxNumber: 100,
+
+        goalRate: 20,
 
         operations: [],
 
@@ -465,10 +661,16 @@
     const settingsScreen = document.getElementById("settingsScreen");
     const gameScreen = document.getElementById("gameScreen");
     const resultsScreen = document.getElementById("resultsScreen");
+    const tricksScreen = document.getElementById("tricksScreen");
 
     const durationInput = document.getElementById("duration");
+    const customDurationWrap = document.getElementById("customDurationWrap");
+    const customDurationInput = document.getElementById("customDuration");
+
     const minNumberInput = document.getElementById("minNumber");
     const maxNumberInput = document.getElementById("maxNumber");
+
+    const goalRateInput = document.getElementById("goalRate");
 
     const additionInput = document.getElementById("addition");
     const subtractionInput = document.getElementById("subtraction");
@@ -477,6 +679,8 @@
 
     const startButton = document.getElementById("startButton");
     const againButton = document.getElementById("againButton");
+    const tricksButton = document.getElementById("tricksButton");
+    const backButton = document.getElementById("backButton");
 
     const timerElement = document.getElementById("timer");
     const scoreElement = document.getElementById("score");
@@ -498,6 +702,21 @@
     function randomChoice(array) {
         return array[Math.floor(Math.random() * array.length)];
     }
+
+
+    // ============================================================
+    // CUSTOM DURATION TOGGLE
+    // ============================================================
+
+    function updateCustomDurationVisibility() {
+        if (durationInput.value === "custom") {
+            customDurationWrap.classList.add("visible");
+        } else {
+            customDurationWrap.classList.remove("visible");
+        }
+    }
+
+    durationInput.addEventListener("change", updateCustomDurationVisibility);
 
 
     // ============================================================
@@ -615,10 +834,23 @@
 
         clearInterval(game.timerInterval);
 
-        const duration = Number(durationInput.value);
+        let duration;
+
+        if (durationInput.value === "custom") {
+            duration = Number(customDurationInput.value);
+
+            if (!duration || duration <= 0) {
+                alert("Enter a valid custom time in seconds.");
+                return;
+            }
+        } else {
+            duration = Number(durationInput.value);
+        }
 
         const minNumber = Number(minNumberInput.value);
         const maxNumber = Number(maxNumberInput.value);
+
+        const goalRate = Number(goalRateInput.value);
 
         if (minNumber < 0) {
             alert("Minimum number cannot be negative.");
@@ -627,6 +859,11 @@
 
         if (maxNumber < minNumber) {
             alert("Maximum number must be greater than minimum number.");
+            return;
+        }
+
+        if (!goalRate || goalRate <= 0) {
+            alert("Goal must be a positive number.");
             return;
         }
 
@@ -666,6 +903,8 @@
         game.minNumber = minNumber;
         game.maxNumber = maxNumber;
 
+        game.goalRate = goalRate;
+
         game.operations = operations;
 
         game.score = 0;
@@ -681,6 +920,7 @@
 
         settingsScreen.style.display = "none";
         resultsScreen.style.display = "none";
+        tricksScreen.style.display = "none";
         gameScreen.style.display = "block";
 
 
@@ -750,13 +990,10 @@
         gameScreen.style.display = "none";
         resultsScreen.style.display = "block";
 
-        const goal = game.duration / 60 * 20;
+        const goal = Math.round((game.duration / 60) * game.goalRate);
         const difference = game.score - goal;
 
         document.getElementById("finalScore").textContent =
-            game.score;
-
-        document.getElementById("totalQuestions").textContent =
             game.score;
 
         const goalResult = document.getElementById("goalResult");
@@ -780,6 +1017,54 @@
         resultsScreen.style.display = "none";
         settingsScreen.style.display = "block";
     }
+
+
+    // ============================================================
+    // TRICKS PAGE NAVIGATION
+    // ============================================================
+
+    function showTricks() {
+
+        settingsScreen.style.display = "none";
+        gameScreen.style.display = "none";
+        resultsScreen.style.display = "none";
+        tricksScreen.style.display = "block";
+
+        try {
+            history.pushState({ page: "tricks" }, "", "/tricks");
+        } catch (e) {
+            // Ignore if the environment blocks history changes.
+        }
+    }
+
+
+    function showSettings(updateUrl) {
+
+        tricksScreen.style.display = "none";
+        gameScreen.style.display = "none";
+        resultsScreen.style.display = "none";
+        settingsScreen.style.display = "block";
+
+        if (updateUrl) {
+            try {
+                history.pushState({ page: "settings" }, "", "/");
+            } catch (e) {
+                // Ignore if the environment blocks history changes.
+            }
+        }
+    }
+
+
+    window.addEventListener("popstate", function () {
+        if (window.location.pathname === "/tricks") {
+            showTricks();
+        } else {
+            settingsScreen.style.display = "block";
+            gameScreen.style.display = "none";
+            resultsScreen.style.display = "none";
+            tricksScreen.style.display = "none";
+        }
+    });
 
 
     // ============================================================
@@ -830,6 +1115,18 @@
         playAgain
     );
 
+    tricksButton.addEventListener(
+        "click",
+        showTricks
+    );
+
+    backButton.addEventListener(
+        "click",
+        function () {
+            showSettings(true);
+        }
+    );
+
 
     // ============================================================
     // ENTER TO START
@@ -846,6 +1143,15 @@
             startGame();
         }
     });
+
+
+    // ============================================================
+    // INITIAL LOAD
+    // ============================================================
+
+    if (window.location.pathname === "/tricks") {
+        showTricks();
+    }
 
 </script>
 
