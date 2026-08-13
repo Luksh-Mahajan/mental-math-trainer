@@ -113,6 +113,10 @@
             display: block;
         }
 
+        #goalModeSetting {
+            display: none;
+        }
+
         .op-ranges {
             margin-top: 18px;
             display: flex;
@@ -457,6 +461,15 @@
         <div class="settings-grid">
 
             <div class="setting">
+                <label for="mode">Mode</label>
+
+                <select id="mode">
+                    <option value="timed" selected>Timed</option>
+                    <option value="goal">Race to a goal</option>
+                </select>
+            </div>
+
+            <div class="setting" id="timedDurationSetting">
                 <label for="duration">Time limit</label>
 
                 <select id="duration">
@@ -479,12 +492,23 @@
                 </div>
             </div>
 
-            <div class="setting">
+            <div class="setting" id="timedGoalSetting">
                 <label for="goalRate">Goal <span class="hint">(correct answers per minute)</span></label>
 
                 <input
                     type="number"
                     id="goalRate"
+                    value="20"
+                    min="1"
+                >
+            </div>
+
+            <div class="setting" id="goalModeSetting">
+                <label for="targetScore">Target <span class="hint">(correct answers to reach)</span></label>
+
+                <input
+                    type="number"
+                    id="targetScore"
                     value="20"
                     min="1"
                 >
@@ -727,8 +751,13 @@ Answer: 2491</div>
     // ============================================================
 
     let game = {
+        mode: "timed",
+        finished: false,
+
         duration: 60,
         remainingTime: 60,
+
+        targetScore: 20,
 
         ranges: {},
 
@@ -762,6 +791,12 @@ Answer: 2491</div>
     const gameScreen = document.getElementById("gameScreen");
     const resultsScreen = document.getElementById("resultsScreen");
     const tricksScreen = document.getElementById("tricksScreen");
+
+    const modeInput = document.getElementById("mode");
+    const timedDurationSetting = document.getElementById("timedDurationSetting");
+    const timedGoalSetting = document.getElementById("timedGoalSetting");
+    const goalModeSetting = document.getElementById("goalModeSetting");
+    const targetScoreInput = document.getElementById("targetScore");
 
     const durationInput = document.getElementById("duration");
     const customDurationWrap = document.getElementById("customDurationWrap");
@@ -877,9 +912,11 @@ Answer: 2491</div>
         }
 
         return {
+            mode: modeInput.value,
             duration: durationInput.value,
             customDuration: customDurationInput.value,
             goalRate: goalRateInput.value,
+            targetScore: targetScoreInput.value,
             ops: ops
         };
     }
@@ -889,6 +926,10 @@ Answer: 2491</div>
 
         if (!settings) {
             return;
+        }
+
+        if (settings.mode !== undefined) {
+            modeInput.value = settings.mode;
         }
 
         if (settings.duration !== undefined) {
@@ -901,6 +942,10 @@ Answer: 2491</div>
 
         if (settings.goalRate !== undefined) {
             goalRateInput.value = settings.goalRate;
+        }
+
+        if (settings.targetScore !== undefined) {
+            targetScoreInput.value = settings.targetScore;
         }
 
         const checks = getOpChecks();
@@ -920,6 +965,7 @@ Answer: 2491</div>
         }
 
         updateCustomDurationVisibility();
+        updateModeVisibility();
     }
 
 
@@ -973,6 +1019,11 @@ Answer: 2491</div>
 
     async function updateBestScoreDisplay() {
 
+        if (modeInput.value === "goal") {
+            bestScoreLine.textContent = "";
+            return;
+        }
+
         const key = getConfigKey();
         const scores = await loadHighScores();
         const entry = scores[key];
@@ -993,6 +1044,7 @@ Answer: 2491</div>
             durationInput,
             customDurationInput,
             goalRateInput,
+            targetScoreInput,
             additionInput,
             subtractionInput,
             multiplicationInput,
@@ -1025,6 +1077,32 @@ Answer: 2491</div>
     }
 
     durationInput.addEventListener("change", updateCustomDurationVisibility);
+
+
+    // ============================================================
+    // MODE TOGGLE
+    // ============================================================
+
+    function updateModeVisibility() {
+
+        if (modeInput.value === "goal") {
+            timedDurationSetting.style.display = "none";
+            timedGoalSetting.style.display = "none";
+            goalModeSetting.style.display = "flex";
+            bestScoreLine.style.display = "none";
+        } else {
+            timedDurationSetting.style.display = "flex";
+            timedGoalSetting.style.display = "flex";
+            goalModeSetting.style.display = "none";
+            bestScoreLine.style.display = "block";
+        }
+    }
+
+    modeInput.addEventListener("change", function () {
+        updateModeVisibility();
+        saveSettings();
+        updateBestScoreDisplay();
+    });
 
 
     // ============================================================
@@ -1117,24 +1195,40 @@ Answer: 2491</div>
 
         clearInterval(game.timerInterval);
 
-        let duration;
+        const mode = modeInput.value;
 
-        if (durationInput.value === "custom") {
-            duration = Number(customDurationInput.value);
+        let duration = null;
+        let goalRate = null;
+        let targetScore = null;
 
-            if (!duration || duration <= 0) {
-                alert("Enter a valid custom time in seconds.");
+        if (mode === "goal") {
+
+            targetScore = Number(targetScoreInput.value);
+
+            if (!targetScore || targetScore <= 0) {
+                alert("Target must be a positive number.");
                 return;
             }
+
         } else {
-            duration = Number(durationInput.value);
-        }
 
-        const goalRate = Number(goalRateInput.value);
+            if (durationInput.value === "custom") {
+                duration = Number(customDurationInput.value);
 
-        if (!goalRate || goalRate <= 0) {
-            alert("Goal must be a positive number.");
-            return;
+                if (!duration || duration <= 0) {
+                    alert("Enter a valid custom time in seconds.");
+                    return;
+                }
+            } else {
+                duration = Number(durationInput.value);
+            }
+
+            goalRate = Number(goalRateInput.value);
+
+            if (!goalRate || goalRate <= 0) {
+                alert("Goal must be a positive number.");
+                return;
+            }
         }
 
 
@@ -1177,8 +1271,13 @@ Answer: 2491</div>
 
         // Reset game state.
 
+        game.mode = mode;
+        game.finished = false;
+
         game.duration = duration;
         game.remainingTime = duration;
+
+        game.targetScore = targetScore;
 
         game.ranges = ranges;
 
@@ -1189,7 +1288,7 @@ Answer: 2491</div>
         game.score = 0;
         game.log = [];
 
-        game.configKey = getConfigKey();
+        game.configKey = mode === "timed" ? getConfigKey() : null;
 
         game.startTime = Date.now();
 
@@ -1198,8 +1297,7 @@ Answer: 2491</div>
 
         // Update UI.
 
-        scoreElement.textContent = "0";
-        timerElement.textContent = duration;
+        updateScoreDisplay();
         feedbackElement.textContent = "";
         highScoreResult.textContent = "";
 
@@ -1217,19 +1315,49 @@ Answer: 2491</div>
 
         // Start timer.
 
-        game.timerInterval = setInterval(() => {
+        if (mode === "goal") {
 
-            game.remainingTime--;
+            timerElement.textContent = "0:00";
 
-            timerElement.textContent =
-                game.remainingTime;
+            game.timerInterval = setInterval(() => {
+                const elapsedSeconds = Math.floor((Date.now() - game.startTime) / 1000);
+                timerElement.textContent = formatTime(elapsedSeconds);
+            }, 1000);
+
+        } else {
+
+            timerElement.textContent = duration;
+
+            game.timerInterval = setInterval(() => {
+
+                game.remainingTime--;
+
+                timerElement.textContent =
+                    game.remainingTime;
 
 
-            if (game.remainingTime <= 0) {
-                endGame();
-            }
+                if (game.remainingTime <= 0) {
+                    endGame();
+                }
 
-        }, 1000);
+            }, 1000);
+        }
+    }
+
+
+    function formatTime(totalSeconds) {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${String(seconds).padStart(2, "0")}`;
+    }
+
+
+    function updateScoreDisplay() {
+        if (game.mode === "goal") {
+            scoreElement.textContent = `${game.score} / ${game.targetScore}`;
+        } else {
+            scoreElement.textContent = game.score;
+        }
     }
 
 
@@ -1238,7 +1366,7 @@ Answer: 2491</div>
     // ============================================================
 
     function submitAnswer() {
-        if (game.remainingTime <= 0) {
+        if (game.finished) {
             return;
         }
 
@@ -1256,7 +1384,7 @@ Answer: 2491</div>
 
         game.score++;
 
-        scoreElement.textContent = game.score;
+        updateScoreDisplay();
 
         game.log.push({
             operation: game.currentOperation,
@@ -1264,6 +1392,12 @@ Answer: 2491</div>
         });
 
         answerInput.value = "";
+
+        if (game.mode === "goal" && game.score >= game.targetScore) {
+            endGame();
+            return;
+        }
+
         generateProblem();
     }
 
@@ -1275,18 +1409,32 @@ Answer: 2491</div>
     async function endGame() {
         clearInterval(game.timerInterval);
 
+        game.finished = true;
         game.remainingTime = 0;
 
         gameScreen.style.display = "none";
         resultsScreen.style.display = "block";
 
-        const goal = Math.round((game.duration / 60) * game.goalRate);
-        const difference = game.score - goal;
-
         document.getElementById("finalScore").textContent =
             game.score;
 
         const goalResult = document.getElementById("goalResult");
+
+        if (game.mode === "goal") {
+
+            const elapsedSeconds = Math.floor((Date.now() - game.startTime) / 1000);
+
+            goalResult.textContent =
+                `You reached ${game.targetScore} in ${formatTime(elapsedSeconds)}.`;
+
+            highScoreResult.textContent = "";
+
+            renderBreakdown();
+            return;
+        }
+
+        const goal = Math.round((game.duration / 60) * game.goalRate);
+        const difference = game.score - goal;
 
         if (difference >= 0) {
             goalResult.textContent =
@@ -1525,6 +1673,7 @@ Answer: 2491</div>
         attachSettingsListeners();
 
         await loadSettings();
+        updateModeVisibility();
         await updateBestScoreDisplay();
 
         if (window.location.pathname === "/tricks") {
