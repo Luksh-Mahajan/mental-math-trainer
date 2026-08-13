@@ -538,7 +538,7 @@
                 <div class="op-range-inputs">
                     <input type="number" id="divisionMin" value="2" min="0" placeholder="Min">
                     <span>to</span>
-                    <input type="number" id="divisionMax" value="100" min="1" placeholder="Max">
+                    <input type="number" id="divisionMax" value="12" min="1" placeholder="Max">
                 </div>
             </div>
 
@@ -1382,6 +1382,8 @@ Answer: 2491</div>
 
         resultsScreen.style.display = "none";
         settingsScreen.style.display = "block";
+
+        updateBestScoreDisplay();
     }
 
 
@@ -1410,6 +1412,8 @@ Answer: 2491</div>
         gameScreen.style.display = "none";
         resultsScreen.style.display = "none";
         settingsScreen.style.display = "block";
+
+        updateBestScoreDisplay();
 
         if (updateUrl) {
             try {
