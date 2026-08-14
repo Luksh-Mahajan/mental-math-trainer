@@ -469,6 +469,15 @@
                 </select>
             </div>
 
+            <div class="setting">
+                <label for="submitMethod">Answer submission</label>
+
+                <select id="submitMethod">
+                    <option value="auto" selected>Auto submit</option>
+                    <option value="enter">Press Enter</option>
+                </select>
+            </div>
+
             <div class="setting" id="timedDurationSetting">
                 <label for="duration">Time limit</label>
 
@@ -640,6 +649,8 @@
 
         <div class="goal-result" id="highScoreResult"></div>
 
+        <div class="goal-result" id="accuracyResult"></div>
+
         <div class="breakdown" id="breakdown"></div>
 
         <button class="again-button" id="againButton">
@@ -741,6 +752,7 @@ Answer: 2491</div>
 
     </div>
 
+
 </div>
 
 
@@ -766,6 +778,15 @@ Answer: 2491</div>
         operations: [],
 
         configKey: null,
+
+        // "auto" (submits as soon as the typed digits match) or "enter"
+        // (only submits — right or wrong — when Enter is pressed).
+        submitMethod: "auto",
+
+        // Total answers submitted this round. Only incremented in "enter"
+        // mode, since "auto" only ever submits correct answers (accuracy
+        // would always read 100%).
+        attempts: 0,
 
         score: 0,
 
@@ -804,6 +825,8 @@ Answer: 2491</div>
 
     const goalRateInput = document.getElementById("goalRate");
 
+    const submitMethodInput = document.getElementById("submitMethod");
+
     const additionInput = document.getElementById("addition");
     const subtractionInput = document.getElementById("subtraction");
     const multiplicationInput = document.getElementById("multiplication");
@@ -831,6 +854,7 @@ Answer: 2491</div>
     const breakdownElement = document.getElementById("breakdown");
     const bestScoreLine = document.getElementById("bestScoreLine");
     const highScoreResult = document.getElementById("highScoreResult");
+    const accuracyResult = document.getElementById("accuracyResult");
 
     const startButton = document.getElementById("startButton");
     const againButton = document.getElementById("againButton");
@@ -894,7 +918,7 @@ Answer: 2491</div>
             }
         }
 
-        return `${durationVal}s|${parts.sort().join(",")}`;
+        return `${durationVal}s|${parts.sort().join(",")}|${submitMethodInput.value}`;
     }
 
 
@@ -917,6 +941,7 @@ Answer: 2491</div>
             customDuration: customDurationInput.value,
             goalRate: goalRateInput.value,
             targetScore: targetScoreInput.value,
+            submitMethod: submitMethodInput.value,
             ops: ops
         };
     }
@@ -946,6 +971,10 @@ Answer: 2491</div>
 
         if (settings.targetScore !== undefined) {
             targetScoreInput.value = settings.targetScore;
+        }
+
+        if (settings.submitMethod !== undefined) {
+            submitMethodInput.value = settings.submitMethod;
         }
 
         const checks = getOpChecks();
@@ -1045,6 +1074,7 @@ Answer: 2491</div>
             customDurationInput,
             goalRateInput,
             targetScoreInput,
+            submitMethodInput,
             additionInput,
             subtractionInput,
             multiplicationInput,
@@ -1191,9 +1221,9 @@ Answer: 2491</div>
     // START GAME
     // ============================================================
 
-    function startGame() {
-
-        clearInterval(game.timerInterval);
+    // Reads and validates the current settings-screen inputs. Returns a
+    // plain settings object, or null (after alerting) if invalid.
+    function readSettingsFromDOM() {
 
         const mode = modeInput.value;
 
@@ -1207,7 +1237,7 @@ Answer: 2491</div>
 
             if (!targetScore || targetScore <= 0) {
                 alert("Target must be a positive number.");
-                return;
+                return null;
             }
 
         } else {
@@ -1217,7 +1247,7 @@ Answer: 2491</div>
 
                 if (!duration || duration <= 0) {
                     alert("Enter a valid custom time in seconds.");
-                    return;
+                    return null;
                 }
             } else {
                 duration = Number(durationInput.value);
@@ -1227,7 +1257,7 @@ Answer: 2491</div>
 
             if (!goalRate || goalRate <= 0) {
                 alert("Goal must be a positive number.");
-                return;
+                return null;
             }
         }
 
@@ -1250,12 +1280,12 @@ Answer: 2491</div>
 
             if (min < 0) {
                 alert("Minimum numbers cannot be negative.");
-                return;
+                return null;
             }
 
             if (max < min) {
                 alert("Each operation's maximum must be at least its minimum.");
-                return;
+                return null;
             }
 
             operations.push(op);
@@ -1265,8 +1295,24 @@ Answer: 2491</div>
 
         if (operations.length === 0) {
             alert("Select at least one operation.");
+            return null;
+        }
+
+        return { mode, duration, goalRate, targetScore, operations, ranges };
+    }
+
+
+    function startGame() {
+
+        clearInterval(game.timerInterval);
+
+        const settings = readSettingsFromDOM();
+
+        if (!settings) {
             return;
         }
+
+        const { mode, duration, goalRate, targetScore, operations, ranges } = settings;
 
 
         // Reset game state.
@@ -1288,7 +1334,10 @@ Answer: 2491</div>
         game.score = 0;
         game.log = [];
 
-        game.configKey = mode === "timed" ? getConfigKey() : null;
+        game.submitMethod = submitMethodInput.value === "enter" ? "enter" : "auto";
+        game.attempts = 0;
+
+        game.configKey = (mode === "timed") ? getConfigKey() : null;
 
         game.startTime = Date.now();
 
@@ -1300,6 +1349,7 @@ Answer: 2491</div>
         updateScoreDisplay();
         feedbackElement.textContent = "";
         highScoreResult.textContent = "";
+        accuracyResult.textContent = "";
 
         settingsScreen.style.display = "none";
         resultsScreen.style.display = "none";
@@ -1377,10 +1427,36 @@ Answer: 2491</div>
         }
 
         const userAnswer = Number(rawAnswer);
+        const isCorrect = userAnswer === game.currentAnswer;
 
-        if (userAnswer !== game.currentAnswer) {
+        // In "enter" mode every submission — right or wrong — counts as
+        // an attempt, so accuracy can be measured. In "auto" mode this
+        // function is only ever called once a correct answer has already
+        // been typed (see the input listener below), so attempts aren't
+        // tracked and accuracy stays undefined (always effectively 100%).
+        if (game.submitMethod === "enter") {
+            game.attempts++;
+        }
+
+        if (!isCorrect) {
+
+            // Auto-submit never reaches this branch — only a wrong
+            // answer submitted via Enter lands here.
+
+            feedbackElement.textContent = "Incorrect — next one.";
+
+            game.log.push({
+                operation: game.currentOperation,
+                timeMs: Date.now() - game.problemShownAt,
+                correct: false
+            });
+
+            answerInput.value = "";
+            generateProblem();
             return;
         }
+
+        feedbackElement.textContent = "";
 
         game.score++;
 
@@ -1388,7 +1464,8 @@ Answer: 2491</div>
 
         game.log.push({
             operation: game.currentOperation,
-            timeMs: Date.now() - game.problemShownAt
+            timeMs: Date.now() - game.problemShownAt,
+            correct: true
         });
 
         answerInput.value = "";
@@ -1413,10 +1490,13 @@ Answer: 2491</div>
         game.remainingTime = 0;
 
         gameScreen.style.display = "none";
+
         resultsScreen.style.display = "block";
 
         document.getElementById("finalScore").textContent =
             game.score;
+
+        updateAccuracyDisplay();
 
         const goalResult = document.getElementById("goalResult");
 
@@ -1446,6 +1526,25 @@ Answer: 2491</div>
 
         renderBreakdown();
         await checkHighScore();
+    }
+
+
+    // Accuracy only means anything in "enter" mode — auto-submit only
+    // ever registers correct answers, so it would always read 100%.
+    function updateAccuracyDisplay() {
+
+        if (game.submitMethod !== "enter") {
+            accuracyResult.textContent = "";
+            return;
+        }
+
+        const attempts = game.attempts;
+        const accuracy = attempts > 0
+            ? Math.round((game.score / attempts) * 100)
+            : 100;
+
+        accuracyResult.textContent =
+            `Accuracy: ${accuracy}% (${game.score} / ${attempts} correct)`;
     }
 
 
@@ -1590,6 +1689,10 @@ Answer: 2491</div>
     // ============================================================
 
     answerInput.addEventListener("input", function () {
+    if (game.submitMethod !== "auto") {
+        return;
+    }
+
     if (answerInput.value.trim() === "") {
         return;
     }
@@ -1600,6 +1703,17 @@ Answer: 2491</div>
         submitAnswer();
     }
 });
+
+
+    // In "press Enter" mode, nothing submits until Enter is pressed —
+    // right or wrong.
+
+    answerInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" && game.submitMethod === "enter") {
+            event.preventDefault();
+            submitAnswer();
+        }
+    });
 
 
     // Prevent accidental browser behavior.
